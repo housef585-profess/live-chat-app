@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pro Live Chat</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="container">
+
+<div id="login">
+    <h2>Join Chat</h2>
+    <input type="text" id="username" placeholder="Username">
+    <select id="room">
+        <option value="General">General</option>
+        <option value="Coding">Coding</option>
+        <option value="Gaming">Gaming</option>
+    </select>
+    <button onclick="join()">Join</button>
+</div>
+
+<div id="chat" style="display:none;">
+    <div class="left">
+        <div id="messages"></div>
+        <div id="typing"></div>
+        <div class="input">
+            <input type="text" id="message" placeholder="Type message..." oninput="typing()">
+            <button onclick="send()">Send</button>
+        </div>
+    </div>
+    <div class="right">
+        <h3>Online Users</h3>
+        <ul id="users"></ul>
+    </div>
+</div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+<script>
+var socket = io();
+var username, room;
+
+function join(){
+    username = document.getElementById("username").value;
+    room = document.getElementById("room").value;
+
+    socket.emit("join_room",{username:username,room:room});
+    document.getElementById("login").style.display="none";
+    document.getElementById("chat").style.display="flex";
+}
+
+function send(){
+    var msg = document.getElementById("message").value;
+    socket.emit("send_message",{username:username,room:room,msg:msg});
+    document.getElementById("message").value="";
+}
+
+function typing(){
+    socket.emit("typing",{username:username,room:room});
+}
+
+socket.on("message",function(data){
+    var div=document.createElement("div");
+    div.className="msg";
+    div.innerHTML="<b>"+data.user+"</b> <span>"+data.time+"</span><p>"+data.msg+"</p>";
+    document.getElementById("messages").appendChild(div);
+});
+
+socket.on("user_list",function(list){
+    var ul=document.getElementById("users");
+    ul.innerHTML="";
+    list.forEach(function(u){
+        var li=document.createElement("li");
+        li.innerText=u;
+        ul.appendChild(li);
+    });
+});
+
+socket.on("typing",function(user){
+    document.getElementById("typing").innerText=user+" is typing...";
+    setTimeout(()=>{document.getElementById("typing").innerText="";},2000);
+});
+</script>
+
+</body>
+</html>
